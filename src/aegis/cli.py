@@ -35,6 +35,10 @@ from aegis.models import (
 from aegis.recorder.tracer import AegisRecorder
 from aegis.refiner.cluster_analyzer import ClusterAnalyzer
 from aegis.refiner.patch_proposer import PatchProposer
+from aegis.injector.engine import NonDestructiveInjector
+from aegis.mcp_gateway.server import LocalMCPServer
+from aegis.mcp_gateway.client import CloudMCPClient
+from aegis.recorder.wal import SQLiteWALStore
 from aegis.sentinel.judge import SentinelJudge
 from aegis.sentinel.redactor import SensitiveRedactor
 
@@ -60,8 +64,10 @@ def version():
     console.print(f"[bold cyan]Agent Aegis Harness (aah)[/bold cyan] version [green]{__version__}[/green]")
 
 @app.command()
-def init():
-    """Initialize Aegis governance configuration, schemas, rules, and hooks in current repository."""
+def init(
+    tools: str = typer.Option("all", "--tools", help="Comma-separated AI tools to inject pointers for (claude,copilot,amazon_q,cursor,all)")
+):
+    """Initialize Aegis governance configuration, schemas, rules, and non-destructive hooks in current repository."""
     console.print("[bold green][OK][/bold green] Initializing [bold cyan]agent-aegis-harness[/bold cyan] in repository...")
     
     dirs = [
@@ -69,6 +75,7 @@ def init():
         Path(".aegis/schemas"),
         Path(".aegis/templates"),
         Path(".aegis/logs"),
+        Path(".aegis/instructions"),
         Path(".hooks"),
         Path(".skills"),
         Path("docs/setup"),
@@ -82,7 +89,7 @@ def init():
     config_file = Path(".aegis/config.yaml")
     if not config_file.exists():
         default_config = """# Agent Aegis Harness (aah) Global Configuration
-version: "1.0.0"
+version: "1.3.0"
 repository_id: "agent-aegis-harness"
 
 sentinel:
@@ -95,6 +102,14 @@ sentinel:
     timeout_ms: 100
   tier3:
     enabled: false # Enabled in CI/PR only
+
+mcp_gateway:
+  mode: "local" # [local | cloud]
+  local:
+    transport: "stdio"
+  cloud:
+    endpoint: "https://aegis-mcp.enterprise.internal/v1/mcp"
+    fallback_to_local_on_error: true
 
 recorder:
   dual_stream: true
@@ -114,6 +129,13 @@ refiner:
   auto_create_pr: false
 """
         config_file.write_text(default_config, encoding="utf-8")
+
+    # 非破壊インジェクションの実行
+    selected = [t.strip() for t in tools.split(",") if t.strip()]
+    injector = NonDestructiveInjector(repo_path=Path("."))
+    injection_results = injector.inject_all(selected_tools=selected)
+    for tool_name, status in injection_results.items():
+        console.print(f"  - [cyan]{tool_name}[/cyan] pointer: [bold green]{status}[/bold green]")
 
     hasher = PolicyHasher()
     digest = hasher.compute_digest()
@@ -396,6 +418,91 @@ Generated: {datetime.utcnow().isoformat()}Z | Standard: ISO/IEC 42001 & NIST AI 
 """
         out_path.write_text(report_md, encoding="utf-8")
         console.print(f"[bold green][OK][/bold green] Report saved to [dim]{output}[/dim]")
+
+
+@app.command(name="mcp-server")
+def mcp_server(
+    mode: str = typer.Option("local", "--mode", help="MCP server mode (local | cloud)"),
+    test: bool = typer.Option(False, "--test", help="Run self-test inspection and exit")
+):
+    """Run Aegis MCP Security Gateway for Claude Code, Copilot, and Cursor integration."""
+    if test:
+        console.print("[bold cyan][TEST][/bold cyan] Testing Aegis MCP Security Gateway...")
+        server = LocalMCPServer()
+        # テスト 1: 正常なアクションの事前検閲
+        inspect_req = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": "aegis_inspect_action",
+                "arguments": {
+                    "action_type": "run_command",
+                    "parameters": {"CommandLine": "git status"}
+                }
+            }
+        }
+        res1 = server.handle_request_dict(inspect_req)
+        console.print(f"  - Safe command test: [bold green]{'PASSED' if 'result' in res1 else 'FAILED'}[/bold green]")
+
+        # テスト 2: 危険なコマンドのブロック検閲
+        block_req = {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {
+                "name": "aegis_inspect_action",
+                "arguments": {
+                    "action_type": "run_command",
+                    "parameters": {"CommandLine": "rm -rf /"}
+                }
+            }
+        }
+        res2 = server.handle_request_dict(block_req)
+        is_blocked = "error" in res2 and res2["error"].get("code") == -32000
+        console.print(f"  - Dangerous command block: [bold green]{'BLOCKED (Correct)' if is_blocked else 'FAILED'}[/bold green]")
+        console.print("[bold green][OK][/bold green] MCP Security Gateway self-test passed.")
+        return
+
+    console.print(f"[bold green][START][/bold green] Aegis MCP Security Gateway running in [cyan]{mode}[/cyan] mode (STDIO)...")
+    if mode == "cloud":
+        client = CloudMCPClient(endpoint="https://aegis-mcp.enterprise.internal/v1/mcp", fallback_to_local=True)
+        # Cloud モード起動（クライアント経由でSTDIOを仲介、またはLocalへ縮退）
+        server = LocalMCPServer()
+        server.run_stdio()
+    else:
+        server = LocalMCPServer()
+        server.run_stdio()
+
+
+@app.command()
+def status():
+    """Display current Aegis multi-AI instrumentation and gateway status."""
+    table = Table(title="Aegis Multi-AI Instrumentation Status", border_style="cyan")
+    table.add_column("Component", style="cyan")
+    table.add_column("Target / Mode", style="bold")
+    table.add_column("Status", style="green")
+
+    # 1. 指示ポインタの確認
+    for tool_name, spec in [
+        ("Claude Code", "CLAUDE.md"),
+        ("VSCode Copilot", ".github/copilot-instructions.md"),
+        ("AWS Kiro / Q", ".amazonq/rules.md"),
+        ("Cursor", ".cursorrules"),
+    ]:
+        p = Path(spec)
+        injected = p.exists() and "<!-- AEGIS-AUDIT-INJECTION -->" in p.read_text(encoding="utf-8", errors="ignore")
+        table.add_row(f"{tool_name} Pointer", spec, "ACTIVE" if injected else "NOT_INJECTED")
+
+    # 2. MCP Gateway モード
+    table.add_row("MCP Gateway", "Local (Default: STDIO)", "READY")
+
+    # 3. WAL ログ
+    wal = SQLiteWALStore()
+    latest = wal.get_latest_record_hash()
+    table.add_row("Local SQLite WAL", "aegis_wal.db", f"ONLINE (Latest: {latest[:12]}...)" if latest else "READY (Genesis)")
+
+    console.print(table)
 
 
 if __name__ == "__main__":

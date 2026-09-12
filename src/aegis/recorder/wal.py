@@ -141,3 +141,25 @@ class AegisWALBuffer:
         with self._get_connection() as conn:
             cursor = conn.execute("SELECT COUNT(*) FROM audit_events_wal;")
             return cursor.fetchone()[0]
+
+    def get_latest_record_hash(self) -> Optional[str]:
+        """最新イベントのハッシュダイジェストを返却"""
+        with self._get_connection() as conn:
+            cursor = conn.execute("SELECT payload FROM audit_events_wal ORDER BY id DESC LIMIT 1;")
+            row = cursor.fetchone()
+            if row:
+                try:
+                    ev = json.loads(row[0])
+                    integrity = ev.get("integrity", {})
+                    return integrity.get("current_record_hash") or integrity.get("session_micro_chain_hash") or ev.get("current_record_hash")
+                except Exception:
+                    pass
+        return None
+
+    def append_event(self, event_dict: Dict[str, Any]) -> int:
+        """enqueue のエイリアス"""
+        return self.enqueue(event_dict)
+
+
+# 後方互換性エイリアス
+SQLiteWALStore = AegisWALBuffer

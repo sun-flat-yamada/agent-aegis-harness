@@ -12,6 +12,9 @@ class ClientToolType(str, Enum):
     ANTIGRAVITY = "google-antigravity"
     CLAUDE_CODE = "claude-code"
     COPILOT = "github-copilot"
+    GITHUB_COPILOT = "github-copilot"
+    GITHUB_COPILOT_CLI = "github-copilot-cli"
+    AWS_KIRO = "aws-kiro"
     CURSOR = "cursor"
     WINDSURF = "windsurf"
     CLI = "cli"
@@ -187,3 +190,61 @@ class WeeklyGovernanceReport(BaseModel):
     incident_highlights: List[Dict[str, Any]] = Field(default_factory=list)
     project_compliance_ranking: List[Dict[str, Any]] = Field(default_factory=list)
     sign_off_status: Dict[str, Optional[str]] = Field(default_factory=dict)
+
+
+class TriggerSourceType(str, Enum):
+    CHAT_PROMPT = "chat_prompt"
+    INLINE_EDIT = "inline_edit"
+    TERMINAL_COMMAND = "terminal_command"
+    MCP_TOOL_CALL = "mcp_tool_call"
+    GIT_COMMIT = "git_commit"
+
+
+class NormalizedTrigger(BaseModel):
+    source: TriggerSourceType
+    raw_prompt: Optional[str] = None
+    sanitized_prompt: str
+    user_identity: str
+    session_id: str
+
+
+class NormalizedInference(BaseModel):
+    model_config = {"protected_namespaces": ()}
+    model_name: Optional[str] = None
+    chain_of_thought_summary: Optional[str] = None
+    raw_thinking_hash: Optional[str] = None
+    user_intent_summary: Optional[str] = None
+
+
+class NormalizedToolCall(BaseModel):
+    tool_name: str
+    arguments: Dict[str, Any] = Field(default_factory=dict)
+    output_summary: Optional[str] = None
+    status: str = "SUCCESS"  # SUCCESS | ERROR | BLOCKED
+
+
+class GitCorrelationContext(BaseModel):
+    commit_sha: Optional[str] = None
+    branch_name: Optional[str] = None
+    staged_files: List[str] = Field(default_factory=list)
+    diff_hash: Optional[str] = None
+    correlation_proof: Optional[str] = None
+
+
+class NormalizedAIEvent(BaseModel):
+    """マルチツール共通の正規化 5W1H 監査イベント"""
+    event_id: str = Field(default_factory=lambda: str(__import__("uuid").uuid4()))
+    trace_id: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    client_tool: ClientToolType
+
+    trigger: NormalizedTrigger
+    inference: NormalizedInference = Field(default_factory=NormalizedInference)
+    tool_calls: List[NormalizedToolCall] = Field(default_factory=list)
+    affected_files: List[str] = Field(default_factory=list)
+    git_context: Optional[GitCorrelationContext] = None
+
+    sentinel_verdict_status: str = "ALLOW"  # ALLOW | WARN | BLOCK
+    policy_hash_digest: str = "pending"
+    previous_record_hash: str = "pending"
+    current_record_hash: str = "pending"
