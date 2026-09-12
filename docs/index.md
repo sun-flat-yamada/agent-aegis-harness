@@ -77,6 +77,7 @@ Comprehensive system architecture, component interactions, and data flow diagram
 - [Target Project Setup & Tool Instrumentation](setup/target-project-guide.md)
 - [Auditor & Governance Central Setup](setup/auditor-setup-guide.md)
 - [Cloud MCP Server Configuration](setup/cloud-mcp-server-guide.md)
+- [GitHub Pages Documentation Hosting Setup (One-Time Manual Step)](setup/github-pages-setup.md)
 
 ---
 

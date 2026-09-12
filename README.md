@@ -47,6 +47,19 @@ As autonomous AI agents (Google Antigravity, Claude Code, Cursor, GitHub Copilot
 
 ---
 
+## Setup & Manual Configuration Requirements
+
+Aegis is designed to operate with near-zero friction. Most setup tasks are completely automated by running `aah init`. However, certain operational modes and external platform integrations require **explicit manual administrative configuration**:
+
+| Category | Automation Level | Manual Action Required | Detailed Guide |
+| :--- | :--- | :--- | :--- |
+| **Target Project Instrumentation** | **Fully Automated** | None for standard use (`aah init`). When customizing rules or instructions, keep injection pointers (`<!-- AEGIS-AUDIT-INJECTION -->`) intact. | [Target Project Guide](docs/setup/target-project-guide.md) |
+| **GitHub Pages Documentation** | **One-Time Manual** | In GitHub repository **Settings → Pages**, change Source to **GitHub Actions**. | [GitHub Pages Setup Guide](docs/setup/github-pages-setup.md) |
+| **Central Auditor Infrastructure** | **Manual Setup** | Deploy OpenTelemetry Collector, configure cloud WORM storage lock (S3 Object Lock / Azure Immutable Blob), and sync central policies. | [Auditor Setup Guide](docs/setup/auditor-setup-guide.md) |
+| **Cloud MCP Security Gateway** | **Infrastructure Setup** | Deploy Azure/AWS infrastructure via Terraform, configure Entra ID authentication, and register endpoint in developer IDE settings. | [Cloud MCP Server Guide](docs/setup/cloud-mcp-server-guide.md) |
+
+---
+
 ## Usage by Persona
 
 Aegis provides tailored workflows depending on your role. Detailed guides are available under `docs/`.

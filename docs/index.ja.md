@@ -77,6 +77,7 @@ aah verify --log-file .aegis/logs/audit-trail.jsonl
 - [監査対象プロジェクトへの導入・設定手順書](setup/target-project-guide.ja.md)
 - [監査側初期構築手順書](setup/auditor-setup-guide.ja.md)
 - [クラウド MCP サーバ設定ガイド](setup/cloud-mcp-server-guide.ja.md)
+- [GitHub Pages ドキュメント公開設定手順書（初回手動設定）](setup/github-pages-setup.ja.md)
 
 ---
 
