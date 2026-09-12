@@ -77,7 +77,7 @@ flowchart TD
 
 ### 構成コンポーネント一覧
 1. **Azure Container Apps (Security Gateway)**:
-   - Python / FastAPI ベースの軽量コンテナ。開発者からの MCP ツール要求を中継し、インプロセス Sentinel で即時判定（ALLOW/BLOCK）。
+   - Python / FastAPI ベースの軽量コンテナ。開発者からの MCP ツール要求を中継し、インプロセス Sentinel で即時判定（ALLOW/FLAGGED 通知）。
    - 従量課金（Consumption Plan）を採用し、リクエスト数と使用リソース（vCPU秒、GiB秒）に応じて柔軟にスケール。
 2. **Azure Event Hubs (Ingestion プレーン)**:
    - 監査イベントを高スループット・低遅延で確実にバッファリング。Throughput Unit (TU) 単位でプロビジョニング。

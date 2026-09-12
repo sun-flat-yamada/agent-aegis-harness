@@ -75,7 +75,7 @@ flowchart TD
 ```
 
 ### Components Evaluated
-1. **Azure Container Apps (Security Gateway)**: Lightweight Python/FastAPI container hosting the in-process Sentinel judge (ALLOW/BLOCK). Billed via Consumption plan based on vCPU-seconds, GiB-seconds, and request count.
+1. **Azure Container Apps (Security Gateway)**: Lightweight Python/FastAPI container hosting the in-process Sentinel judge (ALLOW/FLAGGED notification). Billed via Consumption plan based on vCPU-seconds, GiB-seconds, and request count.
 2. **Azure Event Hubs (Ingestion Plane)**: High-throughput buffer for incoming 5W1H audit records. Billed by Throughput Units (TU) and ingress events.
 3. **Azure Blob Storage (WORM Storage Tier)**: Immutable WORM storage for `audit-trail.jsonl` and `forensic-trail.jsonl` with a 3-year (1,095-day) retention policy. Utilizes Cool GRS (Geo-Redundant Storage).
 4. **Azure Log Analytics Workspace (Hot Search Tier)**: Ingestion and 30-day hot search for incident investigation and Microsoft Sentinel KQL queries.

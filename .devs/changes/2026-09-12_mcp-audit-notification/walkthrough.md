@@ -30,8 +30,10 @@ last_reviewed: "2026-09-12"
 | **NEW** | `src/aegis/mcp_gateway/notifier.py` | `UniversalNotifier` クラスの実装。4 層ハイブリッド通知（STDERR+BEL, インバンドToolResponse, OSネイティブToast, 永続アラートログ）を提供。 |
 | **MODIFY** | `src/aegis/mcp_gateway/server.py` | `LocalMCPServer._handle_tool_call` において、`VerdictStatus.BLOCK` / `WARN` 判定時の JSON-RPC エラーによる即時遮断を廃止。通知発行・`FLAGGED` 監査イベント記録・警告メッセージ付き `result` 返却に刷新。 |
 | **MODIFY** | `src/aegis/cli.py` | `aah mcp-server --test` のセルフテストロジックを、遮断検証から「危険操作の検知通知 & 非遮断正常応答」の検証へ更新。 |
-| **MODIFY** | `docs/setup/target-project-guide.ja.md` | 「第 4 層: MCP セキュリティゲートウェイ検査」の解説を「即時遮断」から「監査専従（Audit-Only）およびマルチプラットフォーム汎用通知」へ改訂。Line 95 の補足も更新。 |
-| **MODIFY** | `docs/setup/target-project-guide.md` | 英語版ガイドの Layer 4 記述を日本語版と同期改訂。 |
+| **MODIFY** | `docs/setup/target-project-guide.ja.md` | 第 4 層の説明文から「即時遮断しません」という残滓表現を排除し、「監査および通知に特化し、ユーザー操作に介入・中断しない」「危険操作検出時はユーザーへの警告通知のみを行う」旨に完全訂正。 |
+| **MODIFY** | `docs/setup/target-project-guide.md` | 英語版ガイドの Layer 2 (`blocks destructive patterns` → `flags risky patterns`) および Layer 4 (`does NOT abruptly block` → `functions strictly in an audit-and-notify capacity... exclusively issues user notifications`) を同期訂正。 |
+| **MODIFY** | `docs/setup/cloud-mcp-server-guide.ja.md` | 「中央インシデント遮断」を「中央インシデント通知・アラート集約」に訂正。 |
+| **MODIFY** | `docs/operations/cloud-cost-analysis.ja.md`<br/>`docs/operations/cloud-cost-analysis.md` | `ALLOW/BLOCK` を `ALLOW/FLAGGED 通知`（`ALLOW/FLAGGED notification`）に訂正。 |
 | **MODIFY** | `tests/test_mcp_gateway.py` | `test_mcp_inspect_action_flagged_not_blocked`, `test_mcp_unknown_tool_flagged_not_blocked`, `test_universal_notifier_layers` 等のテストを追加・改訂。 |
 
 ---
@@ -118,7 +120,7 @@ $ python -m aegis.cli check
 │                               │        │ (5 policies)                        │
 │ Skill Tool Whitelist          │ PASSED │ 10 tools approved in                │
 │                               │        │ .aegis/rules/skill-compliance-poli… │
-│ Cryptographic Log Chain       │ PASSED │ 12 blocks cryptographically         │
+│ Cryptographic Log Chain       │ PASSED │ 14 blocks cryptographically         │
 │                               │        │ verified                            │
 └───────────────────────────────┴────────┴─────────────────────────────────────┘
 [OK] All Sentinel Instant Audit gates passed.
@@ -128,4 +130,4 @@ $ python -m aegis.cli check
 
 ## 4. 総括
 本改修により、MCP セキュリティゲートウェイは「独断でユーザー操作を遮断する」アンチパターンを完全に脱却し、**「非遮断による自律エージェントの処理継続性」** と **「4 層ハイブリッド通知による人間への確実な危険周知」** を両立する堅牢な監査専従アーキテクチャへと進化しました。
-すべてのテストおよび実機セルフテストが成功し、エビデンスが正常に封印されました。
+ドキュメント全体の残存遮断表現も完全に整理され、すべてのテストおよび実機セルフテストが成功し、エビデンスが正常に封印されました。

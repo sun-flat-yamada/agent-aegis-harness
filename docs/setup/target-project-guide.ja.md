@@ -127,7 +127,7 @@ GitHub Copilot CLI は、ターミナル環境で対話的・自律的にコー�
    - Copilot CLI が自律的にコードを修正し Git コミットを作成した際、ローカルフック（`.git/hooks/post-commit`）が起動し、コミット SHA をアクティブな監査トレースおよびポリシーダイジェスト（Policy Bundle Hash）と暗号学的に結合します。
 4. **第 4 層: MCP セキュリティゲートウェイ監査 & マルチプラットフォーム通知 (発展的オプション)**
    - Copilot CLI や Claude Code が MCP (Model Context Protocol) ツール連携を利用する場合、`aah mcp-server --mode local` を介してツール呼び出しをインターセプトし、5W1H 監査記録を行います。
-   - **監査専従（Audit-Only）の原則**: MCP 監査機能は開発フローを不当に阻害しないよう設計されており、ユーザー操作を即時遮断（BLOCK）しません。危険な操作を検出した場合は操作を遮断することなく監査ログ（`FLAGGED`）へ記録し、マルチプラットフォーム汎用通知（ターミナル STDERR + ベル音 `\a`、OS ネイティブ通知、AI チャットへのインバンド警告、永続化アラートログ）により開発者へ即座に警告を伝達します。Windows / macOS / Linux、および VS Code / GitHub Copilot CLI / Claude Code 等の多様な環境で安全な自律エージェント運用を支援します。
+   - **監査専従（Audit-Only）の原則**: MCP の監査機能は監査および通知に特化しており、ユーザー操作に介入・中断することなく透過的に動作します。危険な操作を検出した場合はユーザーへの警告通知のみを行い、監査ログ（`FLAGGED`）を確実に記録します。通知はマルチプラットフォーム（Windows / macOS / Linux）および多様な実行形態（VS Code、GitHub Copilot CLI、Claude Code 等）に対応した汎用通知機構（ターミナル STDERR 出力 + ベル音 `\a`、OS ネイティブ通知、AI チャットへのインバンド警告、永続化アラートログ）により確実に伝達されます。
 
 #### 2. `aah wrap` による保護実行例:
 自律エージェントの対話セッション起動、または特定タスクの直接実行時に `aah wrap --` を付与します：
