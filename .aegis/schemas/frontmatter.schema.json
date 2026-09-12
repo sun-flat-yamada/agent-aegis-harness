@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AegisFrontMatter",
+  "type": "object",
+  "required": [
+    "doc_type",
+    "id",
+    "title",
+    "version",
+    "status",
+    "language",
+    "author",
+    "last_reviewed"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "doc_type": {
+      "type": "string",
+      "enum": ["system_prompt", "audit_rule", "skill_spec", "architecture_doc", "adr", "guide"]
+    },
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "version": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "deprecated", "superseded"]
+    },
+    "language": {
+      "type": "string",
+      "enum": ["en", "ja"]
+    },
+    "canonical_ref": { "type": "string" },
+    "hash_digest": { "type": "string" },
+    "compatibility": {
+      "type": "object",
+      "properties": {
+        "tools": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "min_aah_version": { "type": "string" }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "author": { "type": "string" },
+    "last_reviewed": { "type": "string" }
+  }
+}

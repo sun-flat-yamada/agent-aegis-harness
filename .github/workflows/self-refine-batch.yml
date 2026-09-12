@@ -1,0 +1,28 @@
+name: Aegis Self-Refine Weekly Batch
+
+on:
+  schedule:
+    # 毎週日曜日 00:00 UTC に定期実行
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+jobs:
+  refine-batch:
+    name: Run Offline Refiner Batch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Dependencies
+        run: |
+          pip install -e .
+
+      - name: Run Cluster Analysis & Generate Proposals
+        run: |
+          aah refine --propose-pr

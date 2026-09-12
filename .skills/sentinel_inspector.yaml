@@ -1,0 +1,28 @@
+---
+$schema: ".aegis/schemas/frontmatter.schema.json"
+doc_type: "skill_spec"
+id: "SKILL-SENTINEL-001"
+title: "Sentinel Inspector Skill"
+version: "1.0.0"
+status: "active"
+language: "en"
+canonical_ref: ".skills/sentinel_inspector.yaml"
+hash_digest: "sha256:pending"
+compatibility:
+  tools: ["google-antigravity", "claude-code", "github-copilot", "cursor"]
+  min_aah_version: "0.1.0"
+tags: ["sentinel", "audit", "inspector"]
+author: "@sun-flat-yamada"
+last_reviewed: "2026-09-12"
+---
+
+name: sentinel_inspector
+description: "Inspect active changes and log trails against security, drift, and skill policies."
+tools_required:
+  - "view_file"
+  - "grep_search"
+  - "run_command"
+instructions: |
+  1. Inspect .aegis/rules/ to load current policy bundle.
+  2. Audit recent action payloads against dangerous patterns.
+  3. Emit verdict using aah check.

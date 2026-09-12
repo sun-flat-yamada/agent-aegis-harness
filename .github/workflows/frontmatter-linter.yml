@@ -1,0 +1,65 @@
+name: Markdown Front-matter Linter
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-frontmatter:
+    name: Front-matter Schema Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Lint Dependencies
+        run: |
+          pip install jsonschema pyyaml
+
+      - name: Validate Markdown Front-matter
+        run: |
+          python -c "
+          import json, sys, yaml, jsonschema
+          from pathlib import Path
+
+          schema_path = Path('.aegis/schemas/frontmatter.schema.json')
+          if not schema_path.exists():
+              print('Schema not found!')
+              sys.exit(1)
+
+          schema = json.loads(schema_path.read_text(encoding='utf-8'))
+          failed = False
+
+          # 対象: docs, README, .devs/changes, rules, skills
+          patterns = ['README*.md', 'docs/**/*.md', '.devs/changes/**/*.md', '.aegis/rules/*.yaml', '.skills/*.yaml']
+          files = []
+          for p in patterns:
+              files.extend(Path('.').glob(p))
+
+          for f in files:
+              # 除外対象
+              if '.venv' in f.parts or 'write-input' in f.name:
+                  continue
+              text = f.read_text(encoding='utf-8')
+              if text.startswith('---'):
+                  parts = text.split('---', 2)
+                  if len(parts) >= 3:
+                      try:
+                          fm = yaml.safe_load(parts[1])
+                          jsonschema.validate(instance=fm, schema=schema)
+                          print(f'[OK] {f}')
+                      except Exception as e:
+                          print(f'[FAIL] {f}: {e}')
+                          failed = True
+
+          if failed:
+              sys.exit(1)
+          print('All front-matters conform to schema.')
+          "

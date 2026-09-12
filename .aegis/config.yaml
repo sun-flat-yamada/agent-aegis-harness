@@ -1,0 +1,31 @@
+# Agent Aegis Harness (aah) Global Configuration
+version: "1.0.0"
+repository_id: "agent-aegis-harness"
+
+sentinel:
+  strict_mode: false
+  tier1:
+    enabled: true
+    timeout_ms: 10
+  tier2:
+    enabled: true
+    timeout_ms: 100
+  tier3:
+    enabled: false # Enabled in CI/PR only
+
+recorder:
+  dual_stream: true
+  audit_trail_path: ".aegis/logs/audit-trail.jsonl"
+  forensic_trail_path: ".aegis/logs/forensic-trail.jsonl"
+  otel:
+    enabled: false
+    endpoint: "http://localhost:4317"
+
+archivist:
+  rules_dir: ".aegis/rules"
+  skills_dir: ".skills"
+  enforce_hash_chain: true
+
+refiner:
+  cluster_analysis_batch_size: 100
+  auto_create_pr: false

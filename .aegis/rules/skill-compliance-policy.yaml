@@ -1,0 +1,35 @@
+---
+$schema: ".aegis/schemas/frontmatter.schema.json"
+doc_type: "audit_rule"
+id: "RULE-SKILL-001"
+title: "Skill Compliance Policy"
+version: "1.0.0"
+status: "active"
+language: "en"
+canonical_ref: ".aegis/rules/skill-compliance-policy.yaml"
+hash_digest: "sha256:pending"
+compatibility:
+  tools: ["google-antigravity", "claude-code", "github-copilot", "cursor"]
+  min_aah_version: "0.1.0"
+tags: ["skill", "compliance", "tool-governance"]
+author: "@sun-flat-yamada"
+last_reviewed: "2026-09-12"
+---
+
+rule_id: "RULE-SKILL-001"
+name: "Skill Execution Compliance"
+description: "Verify that loaded skills match project allowed scopes and tool permissions."
+severity: "MEDIUM"
+
+enforce_allowed_tools: true
+allowed_tools_whitelist:
+  - "run_command"
+  - "view_file"
+  - "write_to_file"
+  - "replace_file_content"
+  - "multi_replace_file_content"
+  - "list_dir"
+  - "grep_search"
+  - "search_web"
+  - "read_url_content"
+  - "ask_question"

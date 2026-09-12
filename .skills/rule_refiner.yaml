@@ -1,0 +1,27 @@
+---
+$schema: ".aegis/schemas/frontmatter.schema.json"
+doc_type: "skill_spec"
+id: "SKILL-REFINER-001"
+title: "Rule Refiner Skill"
+version: "1.0.0"
+status: "active"
+language: "en"
+canonical_ref: ".skills/rule_refiner.yaml"
+hash_digest: "sha256:pending"
+compatibility:
+  tools: ["google-antigravity", "claude-code", "github-copilot", "cursor"]
+  min_aah_version: "0.1.0"
+tags: ["refiner", "improvement", "pr-proposer"]
+author: "@sun-flat-yamada"
+last_reviewed: "2026-09-12"
+---
+
+name: rule_refiner
+description: "Analyze historical audit blocks to find recurring friction or context drift, then propose policy updates via PR."
+tools_required:
+  - "view_file"
+  - "run_command"
+instructions: |
+  1. Scan .aegis/logs/audit-trail.jsonl using cluster analyzer.
+  2. Identify top 3 recurring false-positives or drift triggers.
+  3. Generate patch for .aegis/rules/ and stage on a separate branch.

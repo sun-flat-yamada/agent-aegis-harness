@@ -1,0 +1,221 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AegisAuditEvent",
+  "type": "object",
+  "required": [
+    "trace_id",
+    "span_id",
+    "step_index",
+    "timestamp",
+    "audit_reproducibility",
+    "environment",
+    "trigger",
+    "retrieval_context",
+    "inference_trace",
+    "action_payload",
+    "sentinel_verdict",
+    "integrity"
+  ],
+  "properties": {
+    "trace_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "セッション全体のユニークトレースID"
+    },
+    "span_id": {
+      "type": "string",
+      "description": "個別操作・ターンのスパンID"
+    },
+    "step_index": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "セッション内の実行ステップ番号 (Antigravity step_index 準拠)"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "イベント発生日時 (ISO 8601 UTC)"
+    },
+    "audit_reproducibility": {
+      "type": "object",
+      "required": [
+        "policy_bundle_version",
+        "policy_hash_digest",
+        "sentinel_version",
+        "evaluator_engine"
+      ],
+      "properties": {
+        "policy_bundle_version": { "type": "string", "example": "v1.0.0" },
+        "policy_hash_digest": { "type": "string", "example": "sha256:7e8a9f4c..." },
+        "sentinel_version": { "type": "string", "example": "0.1.0" },
+        "evaluator_engine": { "type": "string", "example": "ast-rule+llm-judge" }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "required": ["client_tool", "repository", "git_commit"],
+      "properties": {
+        "client_tool": {
+          "type": "string",
+          "enum": ["google-antigravity", "claude-code", "github-copilot", "cursor", "windsurf", "cli"]
+        },
+        "client_version": { "type": "string" },
+        "repository": { "type": "string" },
+        "git_commit": { "type": "string" },
+        "user_hash": { "type": "string" },
+        "session_id": { "type": "string" },
+        "subagent_depth": { "type": "integer", "default": 0 },
+        "parent_trace_id": { "type": "string" }
+      }
+    },
+    "trigger": {
+      "type": "object",
+      "required": ["source", "sanitized_prompt"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": ["user_prompt", "agent_loop", "ci_event", "pre_commit", "hook_event"]
+        },
+        "sanitized_prompt": { "type": "string" },
+        "redaction_applied": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "retrieval_context": {
+      "type": "object",
+      "properties": {
+        "referenced_files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": { "type": "string" },
+              "blob_sha": { "type": "string" },
+              "token_count": { "type": "integer" }
+            }
+          }
+        },
+        "loaded_skills": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "loaded_rules": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "knowledge_items": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "inference_trace": {
+      "type": "object",
+      "properties": {
+        "model_id": { "type": "string" },
+        "reasoning_summary": { "type": "string" },
+        "token_usage": {
+          "type": "object",
+          "properties": {
+            "prompt_tokens": { "type": "integer" },
+            "candidates_tokens": { "type": "integer" },
+            "thoughts_tokens": { "type": "integer" },
+            "cached_tokens": { "type": "integer" },
+            "total_tokens": { "type": "integer" }
+          }
+        }
+      }
+    },
+    "planning_evidence": {
+      "type": "object",
+      "properties": {
+        "plan_artifact_path": { "type": "string" },
+        "plan_hash_digest": { "type": "string" },
+        "plan_status": {
+          "type": "string",
+          "enum": ["PROPOSED", "APPROVED", "REJECTED", "SKIPPED"]
+        }
+      }
+    },
+    "action_payload": {
+      "type": "object",
+      "properties": {
+        "tool_calls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "tool_name": { "type": "string" },
+              "arguments": { "type": "object" },
+              "status": {
+                "type": "string",
+                "enum": ["PENDING", "APPROVED", "BLOCKED", "SUCCESS", "ERROR"]
+              },
+              "error_message": { "type": "string" }
+            }
+          }
+        },
+        "file_diff_stat": { "type": "string" },
+        "files_modified": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "sentinel_verdict": {
+      "type": "object",
+      "required": ["status", "score", "tier_level", "violations"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["PASS", "WARN", "BLOCK"]
+        },
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "tier_level": {
+          "type": "string",
+          "enum": ["TIER_1_AST", "TIER_2_MODEL", "TIER_3_LLM_JUDGE"]
+        },
+        "violations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "rule_id": { "type": "string" },
+              "severity": {
+                "type": "string",
+                "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+              },
+              "message": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "verification_evidence": {
+      "type": "object",
+      "properties": {
+        "walkthrough_path": { "type": "string" },
+        "walkthrough_digest": { "type": "string" },
+        "tests_passed": { "type": "boolean" },
+        "evidence_media": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "required": ["previous_record_hash", "current_record_hash"],
+      "properties": {
+        "previous_record_hash": { "type": "string" },
+        "current_record_hash": { "type": "string" }
+      }
+    }
+  }
+}

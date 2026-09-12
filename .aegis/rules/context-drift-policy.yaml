@@ -1,0 +1,27 @@
+---
+$schema: ".aegis/schemas/frontmatter.schema.json"
+doc_type: "audit_rule"
+id: "RULE-DRIFT-001"
+title: "Context Drift & Compaction Policy"
+version: "1.0.0"
+status: "active"
+language: "en"
+canonical_ref: ".aegis/rules/context-drift-policy.yaml"
+hash_digest: "sha256:pending"
+compatibility:
+  tools: ["google-antigravity", "claude-code", "github-copilot", "cursor"]
+  min_aah_version: "0.1.0"
+tags: ["drift", "compaction", "integrity"]
+author: "@sun-flat-yamada"
+last_reviewed: "2026-09-12"
+---
+
+rule_id: "RULE-DRIFT-001"
+name: "Context Drift Prevention"
+description: "Detect semantic drift between initial prompt intent and executed actions, especially post-compaction."
+severity: "HIGH"
+
+drift_threshold: 0.25
+max_modified_files_per_turn: 20
+require_plan_for_complex_changes: true
+compaction_check_enabled: true
