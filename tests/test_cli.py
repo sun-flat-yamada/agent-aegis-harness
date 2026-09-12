@@ -39,3 +39,10 @@ def test_cli_refine():
     result = runner.invoke(app, ["refine"])
     assert result.exit_code == 0
     assert "Running Aegis Refiner" in result.stdout
+
+def test_cli_check_instruction_pointers():
+    """aah check における AI Instruction Pointer Integrity の検証確認"""
+    result = runner.invoke(app, ["check"])
+    assert result.exit_code == 0
+    assert "Instruction Pointer Integrity" in result.stdout
+    assert "instruction pointers" in result.stdout

@@ -260,6 +260,29 @@ def check(
     except Exception:
         pass
 
+    # 3. AI Instruction Pointer Integrity 検査 (ユーザー定義・既存設定のポインタ保持検証)
+    from aegis.injector.templates import INJECTION_MARKER, TARGET_TOOL_DEFINITIONS
+
+    pointer_status = "PASSED"
+    missing_pointers = []
+    checked_count = 0
+    for tool_name, spec in TARGET_TOOL_DEFINITIONS.items():
+        p = Path(spec["target_file"])
+        if p.exists():
+            checked_count += 1
+            content = p.read_text(encoding="utf-8", errors="ignore")
+            if INJECTION_MARKER not in content:
+                missing_pointers.append(spec["target_file"])
+
+    if missing_pointers:
+        pointer_status = "WARN"
+        pointer_details = f"Missing Aegis pointer in: {', '.join(missing_pointers)} (Run 'aah init')"
+        has_warnings = True
+    elif checked_count > 0:
+        pointer_details = f"All {checked_count} active instruction pointers verified"
+    else:
+        pointer_details = "No AI instruction files detected yet"
+
     table = Table(title="Sentinel Audit Verdict", border_style="cyan")
     table.add_column("Category", style="cyan", no_wrap=True)
     table.add_column("Status", style="bold green")
@@ -267,6 +290,7 @@ def check(
 
     table.add_row("PII / Secret Redactor", redactor_status, redactor_details)
     table.add_row("Context Drift Integrity", "PASSED", "Compaction drift score: 0.04 (Threshold: 0.20)")
+    table.add_row("Instruction Pointer Integrity", pointer_status, pointer_details)
     table.add_row("Policy Digest Match", "PASSED", f"{digest} ({len(target_files)} policies)")
     table.add_row("Skill Tool Whitelist", "PASSED", "10 tools approved in .aegis/rules/skill-compliance-policy.yaml")
     table.add_row("Cryptographic Log Chain", log_status, log_details)
