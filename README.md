@@ -24,6 +24,8 @@ last_reviewed: "2026-09-12"
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python: >=3.10](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/sun.flat.yamada)
+
 [日本語版ドキュメントはこちら (README.ja.md)](README.ja.md) | [Architecture Specification](docs/ARCHITECTURE.md)
 
 ---
@@ -121,6 +123,14 @@ aah refine --propose-pr
 - [ADR-0001: Cryptographic Hash Chain for Audit Log Immutability](docs/adr/0001-immutable-audit-log.md)
 - [ADR-0002: Decoupling Real-time Auditing from Offline Self-Refinement](docs/adr/0002-decoupled-refinement.md)
 - [ADR-0003: Three-Tiered Documentation Structure by Persona](docs/adr/0003-three-tiered-documentation.md)
+
+---
+
+## 🤝 Contribution & Support
+
+Contributions are welcome! If you find this tool useful, please consider supporting its development.
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/sun.flat.yamada)
 
 ---
 

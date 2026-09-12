@@ -24,6 +24,8 @@ last_reviewed: "2026-09-12"
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python: >=3.10](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/sun.flat.yamada)
+
 [English Version (README.md)](README.md) | [アーキテクチャ設計書](docs/ARCHITECTURE.ja.md)
 
 ---
@@ -121,6 +123,14 @@ aah refine --propose-pr
 - [ADR-0001: 暗号学的 Hash Chain による監査ログ不変性の担保](docs/adr/0001-immutable-audit-log.ja.md)
 - [ADR-0002: 監査実行と自己改善ループの疎結合分離](docs/adr/0002-decoupled-refinement.ja.md)
 - [ADR-0003: 利用者ペルソナ別 3 分類ドキュメント階層の採用](docs/adr/0003-three-tiered-documentation.ja.md)
+
+---
+
+## 🤝 Contribution & Support
+
+Contributions are welcome! If you find this tool useful, please consider supporting its development.
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/sun.flat.yamada)
 
 ---
 
