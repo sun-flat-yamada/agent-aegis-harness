@@ -67,7 +67,7 @@ aah init
 | :--- | :--- | :--- | :--- |
 | **GitHub Copilot (IDE)** | 全自動（ポインタ注入） | `.github/copilot-instructions.md` 内のポインタを維持 | `aah check` / `aah status` |
 | **GitHub Copilot App (Web/PR)** | 全自動（指示ファイル配備） | クラウドCI統制は構想設計書を参照 | `aah check --strict` |
-| **GitHub Copilot CLI** | ラッパー実行 | 実行時に `aah wrap -- gh copilot ...` で保護 | `aah status` |
+| **GitHub Copilot CLI** | 自律エージェント/CLIラッパー | 実行時に `aah wrap -- copilot` または `aah wrap -- gh copilot` で保護 | `aah status` / `aah check` |
 | **Claude Code** | 全自動（ポインタ注入） | `CLAUDE.md` 内のポインタを維持 | `aah check` / `aah status` |
 | **Cursor & Windsurf** | 全自動（ポインタ注入） | `.cursorrules` 内のポインタを維持 | `aah check` / `aah status` |
 | **Google Antigravity** | スキル・ルール資産配備 | Python SDK エージェントコードでアダプタ登録 | `aah check` |
@@ -109,30 +109,54 @@ GitHub.com 上で動作するプルリクエスト自動レビューや自律コ
 
 ---
 
-### C. GitHub Copilot CLI (`gh copilot`)
+### C. GitHub Copilot CLI (独立コマンド `copilot` および `gh copilot`)
 
-ターミナル内でコマンド提案や解説を行う GitHub CLI 拡張機能（`gh copilot suggest`, `gh copilot explain`）に対する計装です。
+GitHub Copilot CLI は、ターミナル環境で対話的・自律的にコーディングタスクを実行するエージェントハーネスです。独立した `copilot` コマンドとして提供されるほか、GitHub CLI 拡張機能（`gh copilot`）としても利用可能です。  
+単なるシェルコマンドの提案や解説にとどまらず、Claude Code のような**自律走行型コーディングエージェント（Autonomous Agent Loop）**として、コードベースのコンテキスト把握、ターミナルコマンドの実行、ファイルの生成・編集、および Git コミット作成を反復実行します。
 
-#### 1. `aah wrap` によるコマンド保護実行:
-`gh copilot` コマンドの先頭に `aah wrap --` を付与して実行します。Sentinel が提案・実行されるコマンドを事前検閲し、危険なコマンド（`rm -rf /` 等）を即時遮断するとともに、5W1H 監査ログを記録します：
+#### 1. Aegis による 4 層自律エージェント監査統制機構:
+自律走行する Copilot CLI に対し、Aegis は以下の 4 つのレイヤーで漏れのない監査と安全制御を提供します：
+
+1. **第 1 層: リポジトリ指示注入 (Instruction Injection)**
+   - `aah init` によって配備された `.github/copilot-instructions.md` のポインタを通じ、Copilot CLI セッション起動時に [`.aegis/instructions/aegis-copilot-rules.md`](.aegis/instructions/aegis-copilot-rules.md) および [`.aegis/instructions/aegis-system-governance.md`](.aegis/instructions/aegis-system-governance.md) が自律エージェントのシステム指示コンテキストへ自動注入されます。
+   - 自律ループ実行時の 5W1H 意図事前開示（Why/What/How）やシークレット混入防止がエージェントに義務付けられます。
+2. **第 2 層: プロセス・コマンド事前検閲 (`aah wrap`)**
+   - エージェントプロセス全体または実行コマンドを `aah wrap -- copilot` (または `aah wrap -- gh copilot`) でラップします。
+   - Aegis Sentinel が起動引数およびエージェントの振る舞いを事前検閲し、機微情報の自動マスキング（Redaction）および `ClientToolType.GITHUB_COPILOT_CLI` としての 5W1H 監査イベント記録を行います。
+3. **第 3 層: Git コミット・暗号学的ハッシュチェーン結合 (GitCorrelator)**
+   - Copilot CLI が自律的にコードを修正し Git コミットを作成した際、ローカルフック（`.git/hooks/post-commit`）が起動し、コミット SHA をアクティブな監査トレースおよびポリシーダイジェスト（Policy Bundle Hash）と暗号学的に結合します。
+4. **第 4 層: MCP セキュリティゲートウェイ検査 (発展的オプション)**
+   - Copilot CLI が MCP (Model Context Protocol) ツール連携を利用する場合、`aah mcp-server --mode local` を介してツール呼び出しをインターセプトし、危険な操作をポリシーベースで即時遮断します。
+
+#### 2. `aah wrap` による保護実行例:
+自律エージェントの対話セッション起動、または特定タスクの直接実行時に `aah wrap --` を付与します：
 ```bash
-# コマンド提案の検閲・保護実行
-aah wrap -- gh copilot suggest -t shell "空のログディレクトリを検索して削除する"
+# 独立コマンド 'copilot' での対話型自律エージェントセッション起動
+aah wrap -- copilot
 
-# コマンド解説の検閲・監査記録
+# 単一タスク指示による自律実行
+aah wrap -- copilot "認証モジュールのユニットテスト失敗を修正してコミットせよ"
+
+# GitHub CLI 拡張 'gh copilot' での起動
+aah wrap -- gh copilot
+
+# コマンド提案・解説サブコマンドの保護実行
+aah wrap -- gh copilot suggest -t shell "空のログディレクトリを検索して削除する"
 aah wrap -- gh copilot explain "kill -9 1234"
 ```
 
-#### 2. 任意のシェルエイリアス設定:
-入力を簡略化したい場合、シェルの設定ファイルにエイリアスを定義できます：
+#### 3. 任意のシェルエイリアス設定:
+日常的に Copilot CLI を利用する場合、シェルの設定ファイルにエイリアスを定義しておくことで、意識することなく常に Aegis の保護下でエージェントを稼働させることができます：
 - **Bash / Zsh (`~/.bashrc`, `~/.zshrc`):**
   ```bash
+  alias copilot='aah wrap -- copilot'
   alias gh-copilot='aah wrap -- gh copilot'
   alias ghcs='aah wrap -- gh copilot suggest -t shell'
   alias ghce='aah wrap -- gh copilot explain'
   ```
 - **PowerShell (`$PROFILE`):**
   ```powershell
+  function copilot { aah wrap -- copilot @args }
   function gh-copilot { aah wrap -- gh copilot @args }
   function ghcs { aah wrap -- gh copilot suggest -t shell @args }
   function ghce { aah wrap -- gh copilot explain @args }

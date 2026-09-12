@@ -67,7 +67,7 @@ Because supported AI tools (GitHub Copilot in IDEs, Claude Code, Cursor) nativel
 | :--- | :--- | :--- | :--- |
 | **GitHub Copilot (IDE)** | Fully automated (pointer injected) | Retain `<!-- AEGIS-AUDIT-INJECTION -->` in `.github/copilot-instructions.md` | `aah check` / `aah status` |
 | **GitHub Copilot App (Web/PR)** | Fully automated (pointer injected) | See Cloud Flow Architecture Blueprint for CI gating | `aah check --strict` |
-| **GitHub Copilot CLI** | Wrapper execution | Wrap execution: `aah wrap -- gh copilot ...` | `aah status` |
+| **GitHub Copilot CLI** | Autonomous Agent / Wrapper execution | Wrap execution: `aah wrap -- copilot` or `aah wrap -- gh copilot` | `aah status` / `aah check` |
 | **Claude Code** | Fully automated (pointer injected) | Retain `<!-- AEGIS-AUDIT-INJECTION -->` in `CLAUDE.md` | `aah check` / `aah status` |
 | **Cursor & Windsurf** | Fully automated (pointer injected) | Retain `<!-- AEGIS-AUDIT-INJECTION -->` in `.cursorrules` | `aah check` / `aah status` |
 | **Google Antigravity** | Skills & rules provisioned | Wire `AntigravityAegisAdapter` in SDK agent config | `aah check` |
@@ -109,30 +109,54 @@ The complete technical specification and design for cloud workflow auditing is d
 
 ---
 
-### C. GitHub Copilot CLI (`gh copilot`)
+### C. GitHub Copilot CLI (Standalone `copilot` & `gh copilot`)
 
-GitHub Copilot CLI provides command suggestions and explanations directly in terminal shells (`gh copilot suggest`, `gh copilot explain`).
+GitHub Copilot CLI is a terminal-based agent harness that executes conversational and autonomous coding tasks. It is provided both as a standalone executable (`copilot`) and as a GitHub CLI extension (`gh copilot`).  
+Far beyond basic command suggestions and explanations, Copilot CLI functions as an **autonomous coding agent harness (Autonomous Agent Loop)**—similar to Claude Code—capable of exploring codebase context, running terminal commands, creating and editing files, and generating Git commits across iterative execution loops.
 
-#### 1. Execution Protection via `aah wrap`:
-Prefix CLI commands with `aah wrap --`. Sentinel intercepts planned commands before execution, blocks destructive commands (`rm -rf /`, secret exfiltration), and records 5W1H audit records:
+#### 1. 4-Layer Autonomous Agent Governance Architecture:
+For autonomous Copilot CLI workflows, Aegis provides four-layered defense-in-depth governance:
+
+1. **Layer 1: Repository Instruction Injection**
+   - Via the pointer injected by `aah init` in `.github/copilot-instructions.md`, Copilot CLI loads [`.aegis/instructions/aegis-copilot-rules.md`](.aegis/instructions/aegis-copilot-rules.md) and [`.aegis/instructions/aegis-system-governance.md`](.aegis/instructions/aegis-system-governance.md) into the agent's system prompt context upon startup.
+   - This mandates upfront 5W1H intent disclosure (Why/What/How) before executing tool calls (mutating commands/file edits) and prevents secret leakage.
+2. **Layer 2: Process & Command Pre-Execution Inspection (`aah wrap`)**
+   - Wrapping agent execution with `aah wrap -- copilot` (or `aah wrap -- gh copilot`) puts the process under Aegis Sentinel supervision.
+   - Sentinel intercepts arguments and sub-commands, redacts sensitive tokens, blocks destructive patterns, and logs 5W1H audit records categorized under `ClientToolType.GITHUB_COPILOT_CLI`.
+3. **Layer 3: Git Commit Hash-Chain Correlation (`GitCorrelator`)**
+   - When Copilot CLI makes autonomous code adjustments and creates Git commits, the Aegis Git post-commit hook (`.git/hooks/post-commit`) triggers automatically, cryptographically binding the commit SHA to the active audit log chain and policy bundle digest.
+4. **Layer 4: MCP Security Gateway Inspection (Optional Advanced)**
+   - When Copilot CLI is paired with Model Context Protocol (MCP) tool servers, routing through `aah mcp-server --mode local` provides real-time policy gating over tool calls.
+
+#### 2. Protected Execution via `aah wrap`:
+Prefix interactive agent sessions or task invocations with `aah wrap --`:
 ```bash
-# Protected suggestion
-aah wrap -- gh copilot suggest -t shell "find and clean empty temp directories"
+# Launch interactive autonomous agent session via standalone binary
+aah wrap -- copilot
 
-# Protected explanation
+# Execute single autonomous agent task
+aah wrap -- copilot "Fix failing tests in authentication module and commit changes"
+
+# Launch via GitHub CLI extension
+aah wrap -- gh copilot
+
+# Protected command suggestion & explanation
+aah wrap -- gh copilot suggest -t shell "find and clean empty temp directories"
 aah wrap -- gh copilot explain "kill -9 1234"
 ```
 
-#### 2. Convenient Shell Aliases (Optional):
-You may optionally add an alias in your shell configuration:
+#### 3. Convenient Shell Aliases (Optional):
+You may optionally add aliases in your shell profile to ensure all Copilot CLI invocations run under Aegis protection transparently:
 - **Bash / Zsh (`~/.bashrc`, `~/.zshrc`):**
   ```bash
+  alias copilot='aah wrap -- copilot'
   alias gh-copilot='aah wrap -- gh copilot'
   alias ghcs='aah wrap -- gh copilot suggest -t shell'
   alias ghce='aah wrap -- gh copilot explain'
   ```
 - **PowerShell (`$PROFILE`):**
   ```powershell
+  function copilot { aah wrap -- copilot @args }
   function gh-copilot { aah wrap -- gh copilot @args }
   function ghcs { aah wrap -- gh copilot suggest -t shell @args }
   function ghce { aah wrap -- gh copilot explain @args }

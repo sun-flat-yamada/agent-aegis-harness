@@ -46,3 +46,34 @@ def test_cli_check_instruction_pointers():
     assert result.exit_code == 0
     assert "Instruction Pointer Integrity" in result.stdout
     assert "instruction pointers" in result.stdout
+
+def test_cli_wrap_client_tool_inference(monkeypatch):
+    """aah wrap におけるクライアントツールの動的推論テスト"""
+    import subprocess
+    from aegis.models import ClientToolType
+    from aegis.recorder.tracer import AegisRecorder
+
+    captured_events = []
+    monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: subprocess.CompletedProcess(args=args, returncode=0))
+    monkeypatch.setattr(AegisRecorder, "record", lambda self, event: captured_events.append(event))
+
+    # copilot standalone
+    result = runner.invoke(app, ["wrap", "--", "copilot", "--help"])
+    assert result.exit_code == 0
+    assert captured_events[-1].environment.client_tool == ClientToolType.GITHUB_COPILOT_CLI
+
+    # gh copilot
+    result = runner.invoke(app, ["wrap", "--", "gh", "copilot", "suggest"])
+    assert result.exit_code == 0
+    assert captured_events[-1].environment.client_tool == ClientToolType.GITHUB_COPILOT_CLI
+
+    # claude
+    result = runner.invoke(app, ["wrap", "--", "claude"])
+    assert result.exit_code == 0
+    assert captured_events[-1].environment.client_tool == ClientToolType.CLAUDE_CODE
+
+    # generic cli
+    result = runner.invoke(app, ["wrap", "--", "echo", "hello"])
+    assert result.exit_code == 0
+    assert captured_events[-1].environment.client_tool == ClientToolType.CLI
+

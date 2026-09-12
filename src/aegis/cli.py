@@ -171,6 +171,15 @@ def wrap(
     redactor = SensitiveRedactor()
     sanitized_cmd, _ = redactor.redact_text(cmd_str)
 
+    # 推論されるクライアントツールの判定
+    inferred_tool = ClientToolType.CLI
+    if command:
+        first = command[0].lower()
+        if first in ("copilot", "github-copilot") or (len(command) > 1 and first == "gh" and command[1].lower() == "copilot"):
+            inferred_tool = ClientToolType.GITHUB_COPILOT_CLI
+        elif first == "claude":
+            inferred_tool = ClientToolType.CLAUDE_CODE
+
     event = AegisAuditEvent(
         trace_id=str(uuid.uuid4()),
         span_id=str(uuid.uuid4())[:8],
@@ -183,7 +192,7 @@ def wrap(
             evaluator_engine="ast-rule+llm-judge",
         ),
         environment=EnvironmentInfo(
-            client_tool=ClientToolType.CLI,
+            client_tool=inferred_tool,
             repository=str(Path.cwd()),
             git_commit="HEAD",
         ),
