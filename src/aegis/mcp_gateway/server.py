@@ -21,6 +21,7 @@ from aegis.models import (
 )
 from aegis.recorder.wal import SQLiteWALStore
 from aegis.sentinel.judge import SentinelJudge
+from aegis.mcp_gateway.notifier import UniversalNotifier
 
 
 class LocalMCPServer:
@@ -29,6 +30,7 @@ class LocalMCPServer:
     def __init__(self, policy_dir: str = ".aegis/rules"):
         self.judge = SentinelJudge(policy_dir=policy_dir)
         self.wal = SQLiteWALStore()
+        self.notifier = UniversalNotifier()
 
     def handle_request_dict(self, req: Dict[str, Any]) -> Dict[str, Any]:
         """JSON-RPC リクエストのディスパッチと処理"""
@@ -75,13 +77,21 @@ class LocalMCPServer:
             parameters = arguments.get("parameters", {})
             verdict = self.judge.evaluate_tool_call(action_type, parameters)
 
-            if verdict.status == VerdictStatus.BLOCK:
-                violations = [v.message for v in verdict.violations]
-                err_msg = f"Execution BLOCKED by Aegis Sentinel: {'; '.join(violations)}"
+            if verdict.status in (VerdictStatus.BLOCK, VerdictStatus.WARN) and verdict.violations:
+                # 危険・警告操作の検出: 即時遮断は行わず、マルチプラットフォーム通知と FLAGGED 記録を行う（監査専従）
+                warning_text = self.notifier.notify_violation(action_type, parameters, verdict)
+                self._record_audit_event(
+                    trigger_source=TriggerSourceType.MCP_TOOL_CALL,
+                    tool_name=action_type,
+                    args=parameters,
+                    status="FLAGGED"
+                )
                 return {
                     "jsonrpc": "2.0",
                     "id": req_id,
-                    "error": {"code": -32000, "message": err_msg}
+                    "result": {
+                        "content": [{"type": "text", "text": warning_text}]
+                    }
                 }
 
             # 正常記録
@@ -120,11 +130,18 @@ class LocalMCPServer:
 
         # 未知のツール名に対するデフォルト検査
         verdict = self.judge.evaluate_tool_call(tool_name, arguments)
-        if verdict.status == VerdictStatus.BLOCK:
+        if verdict.status in (VerdictStatus.BLOCK, VerdictStatus.WARN) and verdict.violations:
+            warning_text = self.notifier.notify_violation(tool_name, arguments, verdict)
+            self._record_audit_event(
+                trigger_source=TriggerSourceType.MCP_TOOL_CALL,
+                tool_name=tool_name,
+                args=arguments,
+                status="FLAGGED"
+            )
             return {
                 "jsonrpc": "2.0",
                 "id": req_id,
-                "error": {"code": -32000, "message": "Blocked by Aegis Sentinel"}
+                "result": {"content": [{"type": "text", "text": warning_text}]}
             }
 
         return {

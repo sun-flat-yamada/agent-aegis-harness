@@ -125,8 +125,9 @@ For autonomous Copilot CLI workflows, Aegis provides four-layered defense-in-dep
    - Sentinel intercepts arguments and sub-commands, redacts sensitive tokens, blocks destructive patterns, and logs 5W1H audit records categorized under `ClientToolType.GITHUB_COPILOT_CLI`.
 3. **Layer 3: Git Commit Hash-Chain Correlation (`GitCorrelator`)**
    - When Copilot CLI makes autonomous code adjustments and creates Git commits, the Aegis Git post-commit hook (`.git/hooks/post-commit`) triggers automatically, cryptographically binding the commit SHA to the active audit log chain and policy bundle digest.
-4. **Layer 4: MCP Security Gateway Inspection (Optional Advanced)**
-   - When Copilot CLI is paired with Model Context Protocol (MCP) tool servers, routing through `aah mcp-server --mode local` provides real-time policy gating over tool calls.
+4. **Layer 4: MCP Security Gateway Auditing & Multi-Platform Notification (Optional Advanced)**
+   - When Copilot CLI or Claude Code is paired with Model Context Protocol (MCP) tool servers, routing through `aah mcp-server --mode local` captures real-time 5W1H audit records without disrupting developer velocity.
+   - **Audit-Only Principle**: MCP auditing operates in non-blocking mode. When potentially dangerous operations are detected, the gateway does NOT abruptly block execution; instead, it records an audit event (`FLAGGED`) and dispatches multi-platform notifications (terminal STDERR + bell `\a`, OS native desktop toasts, in-band AI warning messages, and persistent alert logs) across Windows, macOS, Linux, and diverse runtimes (VS Code, Copilot CLI, Claude Code).
 
 #### 2. Protected Execution via `aah wrap`:
 Prefix interactive agent sessions or task invocations with `aah wrap --`:

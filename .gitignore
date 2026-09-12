@@ -42,5 +42,6 @@ Thumbs.db
 # Aegis runtime logs (sample logs only, keep .gitkeep)
 .aegis/logs/*.jsonl
 .aegis/logs/*.db*
+.aegis/*.log
 !.aegis/logs/.gitkeep
 

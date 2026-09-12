@@ -536,8 +536,8 @@ def mcp_server(
         res1 = server.handle_request_dict(inspect_req)
         console.print(f"  - Safe command test: [bold green]{'PASSED' if 'result' in res1 else 'FAILED'}[/bold green]")
 
-        # テスト 2: 危険なコマンドのブロック検閲
-        block_req = {
+        # テスト 2: 危険なコマンドの監査通知検閲 (非遮断・警告通知)
+        danger_req = {
             "jsonrpc": "2.0",
             "id": 2,
             "method": "tools/call",
@@ -549,9 +549,11 @@ def mcp_server(
                 }
             }
         }
-        res2 = server.handle_request_dict(block_req)
-        is_blocked = "error" in res2 and res2["error"].get("code") == -32000
-        console.print(f"  - Dangerous command block: [bold green]{'BLOCKED (Correct)' if is_blocked else 'FAILED'}[/bold green]")
+        res2 = server.handle_request_dict(danger_req)
+        has_result = "result" in res2
+        content_text = res2.get("result", {}).get("content", [{}])[0].get("text", "")
+        is_warned = "AEGIS AUDIT WARNING" in content_text or "Dangerous operation" in content_text
+        console.print(f"  - Dangerous command audit & notification: [bold green]{'NOTIFIED & ALLOWED (Audit-Only Correct)' if (has_result and is_warned) else 'FAILED'}[/bold green]")
         console.print("[bold green][OK][/bold green] MCP Security Gateway self-test passed.")
         return
 

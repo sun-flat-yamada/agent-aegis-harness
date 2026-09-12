@@ -92,7 +92,7 @@ VS Code や JetBrains の Copilot 拡張機能は、ワークスペース内の�
 #### 2. 独自定義時の必須ルール:
 チーム独自のコーディング規約を `.github/copilot-instructions.md` に追記・編集する場合は、Aegis インジェクションポインタのブロックを維持してください。`aah check` を実行することでポインタの存在が検証されます。
 
-*(※発展的オプション: Copilot Chat の MCP ツール呼び出しをリアルタイム検閲したい場合、`.vscode/settings.json` に `"github.copilot.advanced": {"mcpServers": {"aegis": {"type": "stdio", "command": "aah", "args": ["mcp-server", "--mode", "local"]}}}` を設定できます)。*
+*(※発展的オプション: Copilot Chat の MCP ツール呼び出しをリアルタイム監査・安全通知したい場合、`.vscode/settings.json` に `"github.copilot.advanced": {"mcpServers": {"aegis": {"type": "stdio", "command": "aah", "args": ["mcp-server", "--mode", "local"]}}}` を設定できます)。*
 
 ---
 
@@ -125,8 +125,9 @@ GitHub Copilot CLI は、ターミナル環境で対話的・自律的にコー�
    - Aegis Sentinel が起動引数およびエージェントの振る舞いを事前検閲し、機微情報の自動マスキング（Redaction）および `ClientToolType.GITHUB_COPILOT_CLI` としての 5W1H 監査イベント記録を行います。
 3. **第 3 層: Git コミット・暗号学的ハッシュチェーン結合 (GitCorrelator)**
    - Copilot CLI が自律的にコードを修正し Git コミットを作成した際、ローカルフック（`.git/hooks/post-commit`）が起動し、コミット SHA をアクティブな監査トレースおよびポリシーダイジェスト（Policy Bundle Hash）と暗号学的に結合します。
-4. **第 4 層: MCP セキュリティゲートウェイ検査 (発展的オプション)**
-   - Copilot CLI が MCP (Model Context Protocol) ツール連携を利用する場合、`aah mcp-server --mode local` を介してツール呼び出しをインターセプトし、危険な操作をポリシーベースで即時遮断します。
+4. **第 4 層: MCP セキュリティゲートウェイ監査 & マルチプラットフォーム通知 (発展的オプション)**
+   - Copilot CLI や Claude Code が MCP (Model Context Protocol) ツール連携を利用する場合、`aah mcp-server --mode local` を介してツール呼び出しをインターセプトし、5W1H 監査記録を行います。
+   - **監査専従（Audit-Only）の原則**: MCP 監査機能は開発フローを不当に阻害しないよう設計されており、ユーザー操作を即時遮断（BLOCK）しません。危険な操作を検出した場合は操作を遮断することなく監査ログ（`FLAGGED`）へ記録し、マルチプラットフォーム汎用通知（ターミナル STDERR + ベル音 `\a`、OS ネイティブ通知、AI チャットへのインバンド警告、永続化アラートログ）により開発者へ即座に警告を伝達します。Windows / macOS / Linux、および VS Code / GitHub Copilot CLI / Claude Code 等の多様な環境で安全な自律エージェント運用を支援します。
 
 #### 2. `aah wrap` による保護実行例:
 自律エージェントの対話セッション起動、または特定タスクの直接実行時に `aah wrap --` を付与します：
