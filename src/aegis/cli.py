@@ -218,9 +218,67 @@ def wrap(
 
 @app.command()
 def check(
-    strict: bool = typer.Option(False, "--strict", help="Fail with non-zero exit on warnings")
+    strict: bool = typer.Option(False, "--strict", help="Fail with non-zero exit on warnings"),
+    ci: bool = typer.Option(False, "--ci", help="Execute in Cloud CI mode: auto-detect environment, scan PR diffs, attest OIDC, and emit cloud audit")
 ):
     """Run Sentinel instant audit on staged changes, policies, and recent agent logs."""
+    if ci:
+        console.print("[bold cyan][CI AUDIT] Running Aegis Cloud Sentinel Gate...[/bold cyan]")
+        from aegis.cloud_audit.gate import CloudSentinelGate
+        gate = CloudSentinelGate()
+        verdict = gate.evaluate_ci_run(strict=strict)
+        
+        table = Table(title="Aegis Cloud Sentinel Gate Verdict", border_style="cyan")
+        table.add_column("Property", style="cyan", no_wrap=True)
+        table.add_column("Value", style="bold")
+        
+        status_color = "green" if verdict.status.value == "PASS" else "yellow" if verdict.status.value == "WARN" else "red"
+        table.add_row("Status", f"[{status_color}]{verdict.status.value}[/{status_color}]")
+        table.add_row("Score", f"{verdict.score:.1f} / 100.0")
+        table.add_row("Policy Digest", verdict.policy_digest)
+        
+        ctx = verdict.cloud_context
+        if ctx:
+            table.add_row("Platform", ctx.platform.value)
+            table.add_row("Workflow", ctx.workflow_name)
+            table.add_row("Run ID", ctx.workflow_run_id)
+            table.add_row("Event / Actor", f"{ctx.event_name} by {ctx.actor} ({ctx.actor_type.value})")
+            if ctx.pr_number:
+                table.add_row("PR Number", f"#{ctx.pr_number}")
+            table.add_row("Commit SHA", ctx.head_sha[:10] if len(ctx.head_sha) >= 10 else ctx.head_sha)
+            if ctx.oidc_token_issuer:
+                table.add_row("OIDC Attestation", f"[green]VERIFIED[/green] ({ctx.oidc_token_issuer})")
+            else:
+                table.add_row("OIDC Attestation", "[dim]None (Unauthenticated or local)[/dim]")
+        else:
+            table.add_row("Environment", "[yellow]Local / Non-CI fallback[/yellow]")
+
+        diff = verdict.diff_result
+        if diff:
+            table.add_row("Files Inspected", str(len(diff.files_scanned)))
+            table.add_row("Violations Count", str(len(verdict.violations)))
+            if diff.masked_findings:
+                table.add_row("Masked Secrets", f"[bold red]{', '.join(diff.masked_findings)}[/bold red]")
+
+        console.print(table)
+
+        if verdict.violations:
+            console.print("[bold yellow]Detected Violations / Warnings:[/bold yellow]")
+            for v in verdict.violations:
+                color = "red" if v.severity.value in ("CRITICAL", "HIGH") else "yellow"
+                console.print(f"  - [{color}][{v.severity.value}] {v.rule_id}[/{color}]: {v.message}")
+
+        if verdict.status.value == "BLOCK":
+            console.print("[bold red][FAIL] Critical audit violations detected. CI Gate BLOCKED.[/bold red]")
+            raise typer.Exit(code=1)
+
+        if verdict.status.value == "WARN" and strict:
+            console.print("[bold yellow][WARN] Audit warnings detected in --strict mode. CI Gate FAILED.[/bold yellow]")
+            raise typer.Exit(code=1)
+
+        console.print("[bold green][OK] Aegis Cloud Sentinel Gate PASSED.[/bold green]")
+        return
+
     console.print("[bold cyan][AUDIT] Running Sentinel Instant Audit...[/bold cyan]")
     
     hasher = PolicyHasher()

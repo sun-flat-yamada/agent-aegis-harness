@@ -36,6 +36,47 @@ class AuditReproducibility(BaseModel):
     sentinel_version: str = Field(..., description="Sentinel バージョン")
     evaluator_engine: str = Field(..., description="評価エンジン識別子")
 
+class CloudPlatformType(str, Enum):
+    GITHUB_ACTIONS = "github-actions"
+    AZURE_PIPELINES = "azure-pipelines"
+    AWS_CODEBUILD = "aws-codebuild"
+    GENERIC_CI = "generic-ci"
+
+class ActorType(str, Enum):
+    HUMAN = "human"
+    BOT = "bot"
+    AUTONOMOUS_CLOUD_AGENT = "autonomous-cloud-agent"
+
+class CloudWorkflowContext(BaseModel):
+    """クラウド CI/CD ランナーおよびリモートエージェント実行環境の 5W1H メタデータ"""
+    platform: CloudPlatformType = Field(default=CloudPlatformType.GITHUB_ACTIONS, description="CI/CD プラットフォーム識別子")
+    workflow_name: str = Field(..., description="GitHub Actions ワークフロー名 (.github/workflows/...)")
+    workflow_run_id: str = Field(..., description="GITHUB_RUN_ID (一意のジョブ実行 ID)")
+    workflow_run_attempt: int = Field(default=1, description="GITHUB_RUN_ATTEMPT (再試行回数)")
+    job_id: str = Field(..., description="GITHUB_JOB (実行ジョブ名)")
+    runner_environment: str = Field(default="github-hosted", description="github-hosted または self-hosted")
+    event_name: str = Field(..., description="発火イベント名 (pull_request, push, etc.)")
+    actor: str = Field(..., description="実行トリガー者 (例: github-actions[bot], copilot-agent)")
+    actor_type: ActorType = Field(default=ActorType.HUMAN, description="human, bot, または autonomous-cloud-agent")
+    pr_number: Optional[int] = Field(None, description="対象プルリクエスト番号")
+    head_sha: str = Field(..., description="コミット HEAD SHA")
+    base_sha: Optional[str] = Field(None, description="比較ベースコミット SHA (PR時)")
+    oidc_token_issuer: Optional[str] = Field(None, description="OIDC トークン発行者")
+    job_workflow_ref: Optional[str] = Field(None, description="OIDC クレーム: 実行されたワークフロー定義の不変参照")
+
+class OIDCAttestationClaim(BaseModel):
+    """GitHub OIDC ID Token の検証済みクレームモデル"""
+    iss: str = Field(..., description="Issuer URL")
+    sub: str = Field(..., description="Subject claim")
+    aud: str = Field(..., description="Audience")
+    repository: str = Field(..., description="対象リポジトリ")
+    repository_owner: Optional[str] = Field(None, description="リポジトリオーナー")
+    ref: Optional[str] = Field(None, description="Git Ref")
+    sha: Optional[str] = Field(None, description="コミット SHA")
+    workflow: Optional[str] = Field(None, description="ワークフローパス")
+    run_id: Optional[str] = Field(None, description="Run ID")
+    raw_token_sha256: str = Field(..., description="JWT トークンの SHA-256 ダイジェスト")
+
 class EnvironmentInfo(BaseModel):
     client_tool: ClientToolType
     client_version: Optional[str] = None
@@ -45,6 +86,7 @@ class EnvironmentInfo(BaseModel):
     session_id: Optional[str] = None
     subagent_depth: int = 0
     parent_trace_id: Optional[str] = None
+    cloud_workflow: Optional[CloudWorkflowContext] = None
 
 class TriggerContext(BaseModel):
     source: str

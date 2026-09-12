@@ -1,0 +1,40 @@
+name: "Agent Aegis Cloud Audit Gate"
+description: "Instant Sentinel Audit, Secret Redactor, and OIDC Attestation for AI-driven PRs"
+author: "@sun-flat-yamada"
+
+inputs:
+  strict:
+    description: "Fail workflow on audit warnings"
+    required: false
+    default: "true"
+  fail-on-block:
+    description: "Fail workflow on policy blocks"
+    required: false
+    default: "true"
+  export-otel:
+    description: "Export audit events via OTLP gRPC endpoint"
+    required: false
+    default: "false"
+
+outputs:
+  verdict:
+    description: "Audit status: PASS, WARN, or BLOCK"
+    value: ${{ steps.audit.outputs.verdict }}
+  policy-digest:
+    description: "Deterministic SHA-256 policy digest"
+    value: ${{ steps.audit.outputs.policy_digest }}
+  violations-count:
+    description: "Total number of policy violations detected"
+    value: ${{ steps.audit.outputs.violations_count }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Run Aegis Cloud Sentinel Gate
+      id: audit
+      shell: bash
+      env:
+        ACTIONS_ID_TOKEN_REQUEST_URL: ${{ env.ACTIONS_ID_TOKEN_REQUEST_URL }}
+        ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${{ env.ACTIONS_ID_TOKEN_REQUEST_TOKEN }}
+      run: |
+        python -m aegis.cli check --ci --strict=${{ inputs.strict }}

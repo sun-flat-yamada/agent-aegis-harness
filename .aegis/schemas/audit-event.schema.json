@@ -65,7 +65,35 @@
         "user_hash": { "type": "string" },
         "session_id": { "type": "string" },
         "subagent_depth": { "type": "integer", "default": 0 },
-        "parent_trace_id": { "type": "string" }
+        "parent_trace_id": { "type": "string" },
+        "cloud_workflow": {
+          "type": "object",
+          "required": [
+            "platform",
+            "workflow_name",
+            "workflow_run_id",
+            "job_id",
+            "event_name",
+            "actor",
+            "head_sha"
+          ],
+          "properties": {
+            "platform": { "type": "string" },
+            "workflow_name": { "type": "string" },
+            "workflow_run_id": { "type": "string" },
+            "workflow_run_attempt": { "type": "integer" },
+            "job_id": { "type": "string" },
+            "runner_environment": { "type": "string" },
+            "event_name": { "type": "string" },
+            "actor": { "type": "string" },
+            "actor_type": { "type": "string", "enum": ["human", "bot", "autonomous-cloud-agent"] },
+            "pr_number": { "type": "integer" },
+            "head_sha": { "type": "string" },
+            "base_sha": { "type": "string" },
+            "oidc_token_issuer": { "type": "string" },
+            "job_workflow_ref": { "type": "string" }
+          }
+        }
       }
     },
     "trigger": {
