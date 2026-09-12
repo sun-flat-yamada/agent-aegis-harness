@@ -31,6 +31,9 @@ ENV/
 .coverage
 htmlcov/
 
+# MkDocs build output
+site/
+
 # IDE & OS
 .vscode/
 .idea/

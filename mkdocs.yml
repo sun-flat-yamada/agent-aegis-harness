@@ -1,0 +1,98 @@
+site_name: Agent Aegis Harness
+site_description: Automated Evaluation & Governance Infrastructure for Software-AI
+site_author: Youhei Yamada
+site_url: https://sun-flat-yamada.github.io/agent-aegis-harness/
+repo_url: https://github.com/sun-flat-yamada/agent-aegis-harness
+repo_name: sun-flat-yamada/agent-aegis-harness
+edit_uri: edit/main/docs/
+
+validation:
+  links:
+    absolute_links: info
+    unrecognized_links: info
+    not_found: info
+
+theme:
+  name: material
+  language: en
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+
+plugins:
+  - search:
+      lang:
+        - en
+        - ja
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      languages:
+        - locale: en
+          name: English
+          default: true
+          build: true
+        - locale: ja
+          name: 日本語
+          build: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.snippets
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - tables
+  - attr_list
+  - md_in_html
+  - def_list
+  - toc:
+      permalink: true
+
+nav:
+  - Overview: index.md
+  - Architecture: ARCHITECTURE.md
+  - Architecture Decision Records:
+      - ADR-0001 Immutable Audit Log: adr/0001-immutable-audit-log.md
+      - ADR-0002 Decoupled Refinement: adr/0002-decoupled-refinement.md
+      - ADR-0003 Three-Tiered Documentation: adr/0003-three-tiered-documentation.md
+  - Operations:
+      - Audit Workflows: operations/audit-workflows.md
+      - Cloud Cost Analysis: operations/cloud-cost-analysis.md
+      - Harness Evolution: operations/harness-evolution.md
+  - Setup Guide:
+      - Target Project Guide: setup/target-project-guide.md
+      - Auditor Setup Guide: setup/auditor-setup-guide.md
+      - Cloud MCP Server Guide: setup/cloud-mcp-server-guide.md

@@ -37,6 +37,10 @@ dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.23.0",
 ]
+docs = [
+    "mkdocs-material>=9.5.0",
+    "mkdocs-static-i18n>=1.2.0",
+]
 
 [project.scripts]
 aah = "aegis.cli:app"
