@@ -265,11 +265,28 @@ class NormalizedToolCall(BaseModel):
     status: str = "SUCCESS"  # SUCCESS | ERROR | BLOCKED
 
 
+class ForensicProvenance(BaseModel):
+    """後追い抽出データのフォレンジクス完全性と探索諸元"""
+    source_path: str = Field(..., description="抽出元のローカルファイル絶対パス")
+    source_sha256: str = Field(..., description="抽出元ファイルの SHA-256 ダイジェスト")
+    parser_id: str = Field(..., description="解析に使用したパーサー識別子 (例: copilot-delta-v1)")
+    extraction_timestamp: datetime = Field(default_factory=datetime.utcnow, description="抽出実行日時")
+    confidence_level: str = Field("HIGH", description="復元完全性の確信度 (HIGH | MEDIUM | LOW)")
+    raw_record_kind: Optional[int] = Field(None, description="VS Code Delta Record Kind")
+
+
 class GitCorrelationContext(BaseModel):
     commit_sha: Optional[str] = None
+    commit_timestamp: Optional[datetime] = None
+    commit_author: Optional[str] = None
+    commit_message: Optional[str] = None
     branch_name: Optional[str] = None
     staged_files: List[str] = Field(default_factory=list)
     diff_hash: Optional[str] = None
+    pr_number: Optional[int] = None
+    pr_url: Optional[str] = None
+    confidence_score: float = Field(default=0.0, ge=0.0, le=1.0, description="コミット紐付け総合確信度 (0.0~1.0)")
+    confidence_level: str = Field(default="UNLINKED", description="HIGH | MEDIUM | LOW | UNLINKED")
     correlation_proof: Optional[str] = None
 
 
@@ -279,6 +296,11 @@ class NormalizedAIEvent(BaseModel):
     trace_id: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     client_tool: ClientToolType
+
+    # 諸元・プロベナンス拡張
+    extraction_method: str = Field(default="realtime_hook", description="realtime_hook | retro_local_discovery")
+    tags: List[str] = Field(default_factory=list, description="諸元識別タグ (例: source:github-copilot, extraction:retroactive)")
+    forensic_provenance: Optional[ForensicProvenance] = Field(None, description="事後抽出フォレンジクス諸元")
 
     trigger: NormalizedTrigger
     inference: NormalizedInference = Field(default_factory=NormalizedInference)
@@ -290,3 +312,4 @@ class NormalizedAIEvent(BaseModel):
     policy_hash_digest: str = "pending"
     previous_record_hash: str = "pending"
     current_record_hash: str = "pending"
+

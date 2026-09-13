@@ -7,8 +7,8 @@ from typing import Any, Dict, List, Tuple
 
 class SensitiveRedactor:
     PATTERNS = [
-        # OpenAI API keys
-        ("openai_api_key", re.compile(r"sk-[A-Za-z0-9]{20,60}"), "[REDACTED_OPENAI_KEY]"),
+        # OpenAI API keys (legacy sk-... and modern sk-proj-... formats)
+        ("openai_api_key", re.compile(r"sk-(?:proj-)?[A-Za-z0-9_\-]{20,80}"), "[REDACTED_OPENAI_KEY]"),
         # GitHub tokens
         ("github_token", re.compile(r"gh[pousr]-[A-Za-z0-9_]{36,255}"), "[REDACTED_GITHUB_TOKEN]"),
         # AWS Access Key

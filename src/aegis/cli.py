@@ -41,6 +41,7 @@ from aegis.mcp_gateway.client import CloudMCPClient
 from aegis.recorder.wal import SQLiteWALStore
 from aegis.sentinel.judge import SentinelJudge
 from aegis.sentinel.redactor import SensitiveRedactor
+from aegis.harvester.retro_auditor import RetroactiveSessionAuditor
 
 if sys.platform == "win32":
     try:
@@ -566,6 +567,129 @@ def mcp_server(
     else:
         server = LocalMCPServer()
         server.run_stdio()
+
+harvest_app = typer.Typer(
+    name="harvest",
+    help="Harvest and ingest AI audit events from local/remote sources",
+    add_completion=False,
+)
+app.add_typer(harvest_app, name="harvest")
+
+
+def _parse_since_option(since_str: Optional[str]) -> Optional[datetime]:
+    if not since_str:
+        return None
+    now = datetime.utcnow()
+    since_lower = since_str.lower().strip()
+    if since_lower.endswith("d"):
+        try:
+            from datetime import timedelta
+            return now - timedelta(days=int(since_lower[:-1]))
+        except ValueError:
+            pass
+    elif since_lower.endswith("h"):
+        try:
+            from datetime import timedelta
+            return now - timedelta(hours=int(since_lower[:-1]))
+        except ValueError:
+            pass
+    for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y/%m/%d"):
+        try:
+            return datetime.strptime(since_str, fmt)
+        except ValueError:
+            pass
+    return None
+
+
+@harvest_app.command(name="retro")
+@app.command(name="audit-retro")
+def harvest_retro(
+    repo: str = typer.Option(".", "--repo", help="Path to repository to audit"),
+    tool: str = typer.Option("all", "--tool", help="AI tool filter (all, copilot, claude, cursor)"),
+    since: Optional[str] = typer.Option(None, "--since", help="Filter sessions after this date/time (e.g. 7d, 30d, 2026-01-01)"),
+    matched_only: bool = typer.Option(False, "--matched-only", help="Only extract sessions strictly matching the target repository workspace"),
+    correlate_git: bool = typer.Option(True, "--correlate-git/--no-correlate-git", help="Correlate events with Git commits and PRs"),
+    ingest: bool = typer.Option(True, "--ingest/--dry-run", help="Ingest extracted events into Aegis WAL and audit-trail.jsonl"),
+    output: Optional[str] = typer.Option(None, "--output", "-o", help="Save extracted events as JSON file"),
+):
+    """Retroactively discover, parse, correlate with Git/PR, and ingest local AI sessions (GitHub Copilot, Claude Code, Cursor)."""
+    console.print("[bold cyan][RETRO AUDIT] Starting retroactive local AI session discovery...[/bold cyan]")
+    console.print(f"  Target Repository: [dim]{Path(repo).resolve()}[/dim]")
+    console.print(f"  Tool Filter: [yellow]{tool}[/yellow] | Ingest: [green]{ingest}[/green] | Git Correlation: [cyan]{correlate_git}[/cyan]")
+
+    since_dt = _parse_since_option(since)
+    if since_dt:
+        console.print(f"  Since Filter: [dim]{since_dt.isoformat()}[/dim]")
+
+    auditor = RetroactiveSessionAuditor(repo_path=Path(repo))
+    report = auditor.run_audit(
+        tool_filter=tool,
+        matched_only=matched_only,
+        since=since_dt,
+        correlate_git=correlate_git,
+        ingest=ingest
+    )
+
+    # 概要サマリテーブル
+    table = Table(title="Aegis Retroactive AI Session Audit Summary", border_style="cyan")
+    table.add_column("Metric", style="cyan", no_wrap=True)
+    table.add_column("Count / Status", style="bold")
+
+    table.add_row("Discovered Session Files", str(report.discovered_files_count))
+    table.add_row("Matched Workspace Files", str(report.matched_workspace_files_count))
+    table.add_row("Extracted AI Turn Events", f"[bold green]{report.extracted_events_count}[/bold green]")
+    table.add_row("Git Correlated Commits", f"[bold cyan]{report.correlated_commits_count}[/bold cyan]")
+    table.add_row("Linked Pull Requests", f"[bold yellow]{report.linked_prs_count}[/bold yellow]")
+    
+    if ingest:
+        table.add_row("Ingested into SQLite WAL", f"[green]{report.ingested_wal_count}[/green]")
+        table.add_row("Sealed into Hash-Chain Trail", f"[green]{report.ingested_audit_trail_count}[/green]")
+    else:
+        table.add_row("Ingestion Mode", "[yellow]DRY-RUN (Simulated)[/yellow]")
+
+    console.print(table)
+
+    # 抽出イベントのサンプル一覧 (最新 5 件)
+    if report.events:
+        detail_table = Table(title="Recent Retro-Extracted Events (Sample Preview)", border_style="magenta")
+        detail_table.add_column("Timestamp", style="dim", width=20)
+        detail_table.add_column("Tool", style="cyan", width=14)
+        detail_table.add_column("Prompt Summary", style="white")
+        detail_table.add_column("Git Commit / PR", style="yellow")
+        detail_table.add_column("Provenance Tags", style="dim")
+
+        for ev in report.events[:5]:
+            ts_str = ev.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+            prompt_preview = ev.trigger.sanitized_prompt[:40] + ("..." if len(ev.trigger.sanitized_prompt) > 40 else "")
+            
+            git_info = "-"
+            if ev.git_context and ev.git_context.commit_sha:
+                sha_short = ev.git_context.commit_sha[:7]
+                level = ev.git_context.confidence_level
+                pr_str = f" (PR #{ev.git_context.pr_number})" if ev.git_context.pr_number else ""
+                git_info = f"{sha_short} [{level}]{pr_str}"
+
+            tags_preview = ", ".join([t for t in ev.tags if not t.startswith("session:")][:3])
+
+            detail_table.add_row(
+                ts_str,
+                ev.client_tool.value,
+                prompt_preview,
+                git_info,
+                tags_preview
+            )
+        console.print(detail_table)
+
+    # JSON 出力
+    if output and report.events:
+        out_p = Path(output)
+        out_p.parent.mkdir(parents=True, exist_ok=True)
+        dump_data = [e.model_dump(mode="json") for e in report.events]
+        out_p.write_text(json.dumps(dump_data, indent=2, ensure_ascii=False), encoding="utf-8")
+        console.print(f"[bold green][OK][/bold green] Exported {len(report.events)} events to [dim]{output}[/dim]")
+
+    if ingest and report.ingested_audit_trail_count > 0:
+        console.print("[bold green][OK][/bold green] Retroactive events securely sealed into Aegis Hash Chain. Run [yellow]aah verify[/yellow] to attest integrity.")
 
 
 @app.command()
