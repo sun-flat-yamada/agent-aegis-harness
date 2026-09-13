@@ -41,11 +41,13 @@ last_reviewed: "2026-09-12"
 ## コアコンポーネント
 
 - **`aah wrap`**: AIエージェントの透過実行ラッパー。5W1H 監査ログを自動記録。
+- **`aah harvest retro` / `aah audit-retro` (後追い監査 & Git相関)**: ローカル環境（VS Code `workspaceStorage`、Claude Code、Cursor 等）に残存する過去の AI セッションを自動探索・復元し、Git コミットや PR と高精度に相関・紐付けて改ざん防止台帳へ集積。
 - **`aah sentinel` (監査員)**: 3段階多層防御（Tier 1 AST <10ms、Tier 2 小型モデル <100ms、Tier 3 LLM-Judge）および PII/シークレット即時マスキング。
 - **`aah archivist` (書記・台帳管理)**: ルール群の統合ハッシュ算出（`policy_hash_digest`）、ログ改ざん検証、監査再現性テスト。
 - **`aah recorder` (証跡記録)**: デュアルストリーム監査ログ（軽量 `audit-trail.jsonl` と完全フォレンジック `forensic-trail.jsonl`）の出力および OpenTelemetry 転送。
 - **`aah refiner` (改善・最適化)**: 監査履歴をオフライン分析し、ルール・スキルの改善 PR を自動生成。
 - **`aah report` (監査レポート)**: ISO/IEC 42001 & NIST AI RMF 準拠のガバナンス要約レポートを生成。
+
 
 ---
 
@@ -96,12 +98,17 @@ aah check --strict
 # 【監査実施: 改ざん検証】監査ログの暗号学的改ざん検知 (Merkle Hash Chain 検証)
 aah verify --log-file .aegis/logs/audit-trail.jsonl
 
+# 【監査実施: 後追い監査】ローカルキャッシュに残存する過去の Copilot 操作探索・Git相関・集積
+aah harvest retro --matched-only --ingest
+
 # 【監査実施: レポーティング】ISO 42001 準拠の週次ガバナンスレポート出力
 aah report -o .aegis/reports/weekly-audit.md
 ```
 📖 **詳細ガイド:** 
 - [監査側初期構築手順書](docs/setup/auditor-setup-guide.ja.md)
 - [監査実施ユースケース & ワークフロー例](docs/operations/audit-workflows.ja.md)
+- [ローカル AI セッション後追い監査・Git相関ガイド](docs/operations/retro-audit-guide.ja.md)
+
 
 ---
 

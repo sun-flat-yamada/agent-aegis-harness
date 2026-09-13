@@ -90,6 +90,7 @@ nav:
       - ADR-0003 Three-Tiered Documentation: adr/0003-three-tiered-documentation.md
   - Operations:
       - Audit Workflows: operations/audit-workflows.md
+      - Retroactive Local Session Audit: operations/retro-audit-guide.md
       - Cloud Cost Analysis: operations/cloud-cost-analysis.md
       - Harness Evolution: operations/harness-evolution.md
   - Setup Guide:

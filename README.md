@@ -41,11 +41,13 @@ As autonomous AI agents (Google Antigravity, Claude Code, Cursor, GitHub Copilot
 ## Core Components
 
 - **`aah wrap`**: Transparent interception layer monitoring agent execution and 5W1H audit trails.
+- **`aah harvest retro` / `aah audit-retro` (Retroactive Audit & Git Correlation)**: Discovers and recovers cached AI sessions from local environments (VS Code `workspaceStorage`, Claude Code, Cursor), correlating operations with Git commits and PRs into the tamper-proof ledger.
 - **`aah sentinel`**: Real-time evaluator with 3-tiered defense (Tier 1 AST <10ms, Tier 2 lightweight model <100ms, Tier 3 LLM-Judge) and PII/Secret redactor.
 - **`aah archivist`**: Policy bundle hasher (`policy_hash_digest`), Merkle Hash Chain verification, and deterministic reproducibility testing.
 - **`aah recorder`**: 5W1H extractor with Dual-Stream Trail (`audit-trail.jsonl` and `forensic-trail.jsonl`) and OpenTelemetry exporter.
 - **`aah refiner`**: Offline cluster analyzer generating rule/skill improvement Pull Requests.
 - **`aah report`**: Governance audit reporter generating executive compliance reports (ISO/IEC 42001 & NIST AI RMF).
+
 
 ---
 
@@ -96,12 +98,17 @@ aah check --strict
 # Cryptographically verify audit trail integrity (Merkle Hash Chain)
 aah verify --log-file .aegis/logs/audit-trail.jsonl
 
+# Retroactively harvest local cached AI sessions & correlate with Git commits
+aah harvest retro --matched-only --ingest
+
 # Generate governance compliance report
 aah report -o .aegis/reports/weekly-audit.md
 ```
 📖 **Detailed Guides:**
 - [Auditor & Governance Central Setup Guide](docs/setup/auditor-setup-guide.md)
 - [Auditing Workflows & Forensic Operations Guide](docs/operations/audit-workflows.md)
+- [Retroactive Local AI Session Harvester & Git Correlator Guide](docs/operations/retro-audit-guide.md)
+
 
 ---
 
